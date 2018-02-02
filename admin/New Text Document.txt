@@ -1,0 +1,1773 @@
+Appendix
+Source Code:
+1.	All Route File 
+
+Route::post('/OutCustomar', 'WelcomeController@OutCustomar');
+Route::get('/', 'WelcomeController@welcome');
+Route::get('/login', 'HomeIndexController@signInOut');
+Auth::routes();
+//vendor/laravel/framework/src/illuminate/routing/router.php
+Route::get('/home', 'HomeController@index')->name('home');
+/*Route::get('/profile/{id}', 'ProfileController@index')->middleware('CheckRegMiddleware');*/
+Route::get('login/facebook', 'FbLoginControlle@redirectToProvider');
+Route::get('login/facebook/callback', 'FbLoginControlle@handleProviderCallback');
+Route::get('login/google', 'GmailLoginController@redirectToProvider');
+Route::get('login/google/callback', 'GmailLoginController@handleProviderCallback');
+Route::get('login/twitter', 'TwitterLoginController@redirectToProvider');
+Route::get('login/twitter/callback', 'TwitterLoginController@handleProviderCallback');
+Route::get('login/github', 'GitHubLoginController@redirectToProvider');
+Route::get('login/github/callback', 'GitHubLoginController@handleProviderCallback');
+Route::get('login/linkedin', 'linkedinLoginController@redirectToProvider');
+Route::get('login/linkedin/callback', 'linkedinLoginController@handleProviderCallback');
+/*Route::get('verifyEmailFirst', 'Auth\RegisterController@verifyEmailFirst')->name('verifyEmailFirst');*/
+Route::get('verify/{email}/{verifyToken}', 'Auth\RegisterController@sendEmailDone')->name('sendEmailDone');
+Route::group(['middleware' => ['CheckRegMiddleware']], function () {
+    /*Route::get('/timeline','HomeIndexController@homeIndex');*/
+    Route::get('/postById/{id}', 'HomeIndexController@PostById');
+    Route::get('/allpostById/{id}', 'HomeIndexController@allPostById');
+    Route::get('/search', 'HomeIndexController@search');
+    Route::post('/searchResult', 'HomeIndexController@searchResult');
+    Route::post('/pChat', 'ChatController@pChatUp');
+    Route::get('/privateChat/{id}', 'ChatController@privateChat');
+    Route::get('/chat', 'ChatController@Index');
+    Route::post('/chat/send', 'ChatController@send');
+    Route::post('saveToSession', 'ChatController@saveToSession');
+    Route::post('getOldMessage', 'ChatController@getOldMessage');
+    Route::get('/profile/{id}', 'ProfileController@index');
+    Route::get('/gallery/{id}', 'ProfileController@gallery');
+    Route::post('/profile/proup', 'ProfileController@proUp');
+    Route::get('/update/login/{id}', 'UpdateController@upLogin');
+    Route::post('/update/login/save', 'UpdateController@upLoginSave');
+    Route::get('/update/basic/{id}', 'UpdateController@upBasic');
+    Route::post('/update/save', 'UpdateController@upBasicSave');
+    Route::get('/update/education/{id}', 'UpdateController@upEducation');
+    Route::post('/update/save2', 'UpdateController@upEduSave');
+    Route::post('/status', 'Status_postController@statusUp');
+    Route::get('/status/delete/{id}', 'Status_postController@statusDelete');
+    Route::get('/status/edit/{id}', 'Status_postController@statusEdit');
+    Route::post('/status/update', 'Status_postController@statusUpdate');
+    Route::post('/response/add', 'Status_postController@responseCreate');
+    Route::post('/response/delete', 'Status_postController@responseDelete');
+    Route::post('/response/update', 'Status_postController@responseUpdate');
+});
+Route::GET('admin/home', 'AdminController@index');
+Route::GET('admin/editor', 'EditorController@index');
+Route::GET('admin/share', 'EditorController@shareAdmin');
+Route::GET('admin', 'Admin\LoginController@showLoginForm')->name('admin.login');
+Route::POST('admin', 'Admin\LoginController@Login');
+Route::POST('admin-password/email', 'Admin\ForgotPasswordController@sendResetLinkEmail')->name('admin.password.email');
+Route::GET('admin-password/reset', 'Admin\ForgotPasswordController@showLinkRequestForm')->name('admin.password.request');
+Route::POST('admin-password/reset', 'Admin\ResetPasswordController@reset');
+Route::GET('admin-password/reset/{token}', 'Admin\ResetPasswordController@showResetForm')->name('admin.password.reset');
+Route::POST('admin/add', 'AdminController@addAdmin');
+Route::POST('admin/delete', 'AdminController@deleteAdmin');
+Route::POST('admin/update', 'AdminController@updateAdmin');
+Route::POST('user/delete', 'UpdateController@deleteUser');
+
+
+
+
+2.	<?php
+
+namespace App\Http\Controllers;
+
+use App\Admin;
+use App\BasicUp;
+use App\CategoryList;
+use App\EduUp;
+use App\imageId;
+use App\Response;
+use App\role_admin;
+use App\StatasPost;
+use App\User;
+use Auth;
+use DB;
+use Illuminate\Http\Request;
+
+class AdminController  extends Controller
+{
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->middleware('auth:admin');
+        $this->middleware('admin');
+    }
+
+    /**
+     * Show the application dashboard.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+        $adminObj = DB::table('admins')
+            ->join('role_admins', 'role_admins.admin_id', '=', 'admins.id')
+            ->select('admins.*')
+            ->where('role_id',2)
+            ->get();
+
+
+        //$adminObj=Admin::all();
+
+        return view('admin.home',['adminAll' => $adminObj]);
+    }
+    public function addAdmin(Request $request){
+        $objAdmin = new Admin();
+        $objAdmin->name=$request->name;
+        $objAdmin->phone=$request->phone;
+        $objAdmin->email= $request->email;
+        $objAdmin->password=bcrypt($request->password);
+        $objAdmin->statusVerify=1;
+        $objAdmin->save();
+        $objAdmin1 = Admin::where('email',$request->email)->first();
+
+        $roleObj = new role_admin();
+        $roleObj->role_id=2;
+        $roleObj->admin_id=$objAdmin1->id;
+        $roleObj->save();
+        return 'Done';
+
+    }
+    public function deleteAdmin(Request $request){
+        Admin::where('id',$request->id)->delete();
+        role_admin::where('admin_id',$request->id)->delete();
+
+    }
+    public function updateAdmin(Request $request){
+        $adminObj = Admin::find($request->id);
+        $adminObj->name=$request->name;
+        $adminObj->email=$request->email;
+        $adminObj->phone=$request->phone;;
+        $adminObj->save();
+    }
+
+}
+
+
+
+
+
+3.	<?php
+
+namespace App\Http\Controllers;
+
+use App\Events\ChatEvent;
+use App\NotificationModel;
+use App\PrivateChat;
+use App\User;
+use DB;
+
+use function GuzzleHttp\Promise\all;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class ChatController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
+    public function Index(){
+
+        return view('newPage.chat');
+    }
+    public function chat(){
+        return view('newPage.chat');
+    }
+    /*public function send(){
+        $message='ami k';
+        $user =User::find(Auth::id());
+        event(new ChatEvent($message,$user));
+    }*/
+    public function send(Request $request){
+        //return $request->all();
+        $user =User::find(Auth::id());
+        $this->saveToSession($request);
+
+        event(new ChatEvent($request->message,$user));
+    }
+    public function saveToSession(request $request)
+    {
+        session()->put('chat',$request->chat);
+    }
+    public function getOldMessage()
+    {
+        return session('chat');
+    }
+    public function privateChat($id){
+
+            //$u= Auth::user()->id;
+        //$chatData=PrivateChat::where('toId',$this->id)->get();
+        //$chatData=PrivateChat::where('toId',$id)->get();
+        $userName=User::where('id',$id)->first();
+        $chatData= DB::table('private_chats')
+            ->where('toId', '=',$id)
+            ->where('FormId', '=',Auth::user()->id)
+            ->orWhere('toId', '=',Auth::user()->id)
+            ->Where('FormId', '=',$id)
+            ->select('private_chats.*')
+            ->orderBy('id', 'desc')
+            ->get();
+        //return $chatData->all();
+
+        if(count($chatData)==0){
+            $userObject1=User::where('id',$id)->first();
+            $userObject2=User::where('id',Auth::user()->id)->first();
+            $cEnter=new PrivateChat();
+            $cEnter->toId=$userObject1->id;
+            $cEnter->toName=$userObject1->name;
+            $cEnter->FormId=$userObject2->id;
+            $cEnter->FormName=$userObject2->name;
+            $cEnter->txt='Welcome';
+            $cEnter->time='';
+            $cEnter->save();
+
+            $chatData= DB::table('private_chats')
+                ->where('toId', '=',$id)
+                ->where('FormId', '=',Auth::user()->id)
+                ->orWhere('toId', '=',Auth::user()->id)
+                ->Where('FormId', '=',$id)
+                ->select('private_chats.*')
+                ->orderBy('id', 'desc')
+                ->get();
+
+            $toUser=User::where('id',$id)->first();
+            $userAll=User::all();
+            return view('frontEnd.home.chat',['userAll'=>$userAll,'userName'=>$userName,'toUser'=>$toUser,'chatData'=>$chatData,]);
+        }
+        else{
+            $toUser=User::where('id',$id)->first();
+
+            $userAll=User::all();
+            return view('frontEnd.home.chat',['userAll'=>$userAll,'userName'=>$userName,'toUser'=>$toUser,'chatData'=>$chatData,]);
+
+        }
+
+
+
+    }
+    public function pChatUp(Request $request){
+        $Pchat=new PrivateChat();
+        $Pchat->toId=$request->toText;
+        $Pchat->toName=$request->toName;
+        $Pchat->FormName=$request->FormName;
+        $Pchat->FormId=$request->formText;
+        $Pchat->txt=$request->pCText;
+        $Pchat->time=date("Y-m-d (h:i:sa)");
+
+        $notificationObj=new NotificationModel();
+        $notificationObj->user_id=$request->toText;
+        $notificationObj->user_name=$request->FormName;
+        $notificationObj->message=' send you a message ';
+        $notificationObj->link_id=$request->formText;
+        $notificationObj->time=$Pchat->time;
+        $notificationObj->save();
+
+        $Pchat->save();
+
+    }
+
+
+}
+
+
+
+
+4.	<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Foundation\Bus\DispatchesJobs;
+use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Foundation\Validation\ValidatesRequests;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
+class Controller extends BaseController
+{
+    use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
+}
+
+5.	<?php
+
+namespace App\Http\Controllers;
+
+use App\BasicUp;
+use App\CategoryList;
+use App\EduUp;
+use App\Response;
+use App\StatasPost;
+use App\User;
+use Illuminate\Http\Request;
+
+class EditorController extends Controller
+{    /**
+ * Create a new controller instance.
+ *
+ * @return void
+ */
+    public function __construct()
+    {
+        $this->middleware('auth:admin');
+        $this->middleware('editor',['except'=>'shareAdmin']);
+    }
+    public function index(){
+
+        return view('admin.editor');
+    }
+    public function shareAdmin(){
+
+        $userObj=User::all();
+        return view('admin.share',['userAll'=>$userObj]);
+
+    }
+
+
+}
+
+
+6.	<?php
+
+namespace App\Http\Controllers;
+use Auth;
+use App\User;
+use Illuminate\Http\Request;
+use Socialite;
+class FbLoginControlle extends Controller
+{
+    public function redirectToProvider()
+    {
+        return Socialite::driver('facebook')->redirect();
+    }
+    public function handleProviderCallback()
+    {
+        try{
+            $socialUser = Socialite::driver('facebook')->user();
+            $user=User::where('facebook_id',$socialUser->getId())->first();
+            $user2=User::where('email',$socialUser->getEmail())->first();
+           /* $a=(string)$socialUser->getEmail();*/
+            if($user2==null && $user==null){
+                $userObj = new User();
+                $userObj->facebook_id=$socialUser->getId();
+                $userObj->name=$socialUser->getName();
+                $userObj->email=$socialUser->getEmail();
+                $userObj->gender='';
+                $userObj->phone='';
+                $userObj->statusVerify='1';
+                $userObj->dateOfBirth='';
+                $userObj->password=bcrypt(123456);
+                $userObj->save();
+                Auth::login($userObj);
+                return redirect()->intended('/home');
+            }
+            /*elseif ($socialUser->getEmail().toString()==''){
+                $userObj = new User();
+                $userObj->facebook_id=$socialUser->getId();
+                $userObj->name=$socialUser->getName();
+                $userObj->email=$socialUser->getId().'@ownNote.com';
+                $userObj->gender='';
+                $userObj->phone='';
+                $userObj->dateOfBirth='';
+                $userObj->password=bcrypt(123456);
+                $userObj->save();
+                Auth::login($userObj);
+                return redirect()->intended('/home');
+            }*/
+           else{
+                Auth::login($user2);
+                return redirect()->intended('/home');
+            }
+
+        }
+        catch (\Exception $e){
+            //return dd($socialUser);
+            return redirect('/login');
+        }
+        //return dd($user);
+
+    }
+}
+
+
+
+7.	<?php
+
+namespace App\Http\Controllers;
+use Auth;
+use App\User;
+use Illuminate\Http\Request;
+use Socialite;
+class GitHubLoginController extends Controller
+{
+    public function redirectToProvider()
+    {
+        return Socialite::driver('github')->redirect();
+    }
+
+    /**
+     * Obtain the user information from GitHub.
+     *
+     * @return Response
+     */
+
+    public function handleProviderCallback()
+    {
+        try{
+            $socialUser = Socialite::driver('github')->user();
+            $user=User::where('github_id',$socialUser->getId())->first();
+            $user2=User::where('email',$socialUser->getEmail())->first();
+            /* $a=(string)$socialUser->getEmail();*/
+            if($user2==null && $user==null){
+                $userObj = new User();
+                $userObj->github_id=$socialUser->getId();
+                $userObj->name=$socialUser->getName();
+                $userObj->email=$socialUser->getEmail();
+                $userObj->gender='';
+                $userObj->phone='';
+                $userObj->statusVerify='1';;
+                $userObj->dateOfBirth='';
+                $userObj->password=bcrypt(123456);
+                $userObj->save();
+                Auth::login($userObj);
+                return redirect()->intended('/home');
+            }
+            /*elseif ($socialUser->getEmail().toString()==''){
+                $userObj = new User();
+                $userObj->facebook_id=$socialUser->getId();
+                $userObj->name=$socialUser->getName();
+                $userObj->email=$socialUser->getId().'@ownNote.com';
+                $userObj->gender='';
+                $userObj->phone='';
+                $userObj->dateOfBirth='';
+                $userObj->password=bcrypt(123456);
+                $userObj->save();
+                Auth::login($userObj);
+                return redirect()->intended('/home');
+            }*/
+            else{
+                Auth::login($user2);
+                return redirect()->intended('/home');
+            }
+
+        }
+        catch (\Exception $e){
+            // return dd($socialUser);
+            return redirect('/login');
+        }
+        //return dd($user);
+
+    }
+}
+
+
+
+8.	<?php
+
+namespace App\Http\Controllers;
+use Auth;
+use App\User;
+use Illuminate\Http\Request;
+use Socialite;
+class GmailLoginController extends Controller
+{
+    public function redirectToProvider()
+    {
+        return Socialite::driver('google')->redirect();
+    }
+
+    /**
+     * Obtain the user information from GitHub.
+     *
+     * @return Response
+     */
+
+    public function handleProviderCallback()
+    {
+        try{
+            $socialUser = Socialite::driver('google')->stateless()->user();
+            $user=User::where('google_id',$socialUser->getId())->first();
+            $user2=User::where('email',$socialUser->getEmail())->first();
+            /* $a=(string)$socialUser->getEmail();*/
+            if($user2==null && $user==null){
+                $userObj = new User();
+                $userObj->google_id=$socialUser->getId();
+                $userObj->name=$socialUser->getName();
+                $userObj->email=$socialUser->getEmail();
+                $userObj->gender='';
+                $userObj->phone='';
+                $userObj->statusVerify='1';;
+                $userObj->dateOfBirth='';
+                $userObj->password=bcrypt(123456);
+                $userObj->save();
+                Auth::login($userObj);
+                return redirect()->intended('/home');
+            }
+            /*elseif ($socialUser->getEmail().toString()==''){
+                $userObj = new User();
+                $userObj->facebook_id=$socialUser->getId();
+                $userObj->name=$socialUser->getName();
+                $userObj->email=$socialUser->getId().'@ownNote.com';
+                $userObj->gender='';
+                $userObj->phone='';
+                $userObj->dateOfBirth='';
+                $userObj->password=bcrypt(123456);
+                $userObj->save();
+                Auth::login($userObj);
+                return redirect()->intended('/home');
+            }*/
+            else{
+                Auth::login($user2);
+                return redirect()->intended('/home');
+            }
+
+        }
+        catch (\Exception $e){
+           // return dd($socialUser);
+            return redirect('/login');
+        }
+        //return dd($user);
+
+    }
+}
+
+
+9.	<?php
+
+namespace App\Http\Controllers;
+
+use App\NotificationModel;
+use App\Response;
+use Auth;
+use DB;
+use App\imageId;
+use Illuminate\Http\Request;
+
+class HomeController extends Controller
+{
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
+    /**
+     * Show the application dashboard.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+       // $notificationObj=NotificationModel::all();
+
+
+       // $responseObj=Response::all();
+        $responseObj = DB::table('responses')
+            ->join('users', 'responses.user_id', '=', 'users.id')
+            ->select('responses.*','users.name','users.proPic')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        //return $responseObj;
+        /*$userObject=User::where('id',$id)->first();
+        return view('frontEnd.update.loginUpdate',['userInfoById'=>$userObject]);*/
+        /*
+         *  echo '<pre>';
+         print_r();
+         exit();
+        */
+        //$imageid=DB::table('image_ids')
+            /*->get();*/
+        $imageid=imageId::where('id','2')->first();
+        $imageid=imageId::all();
+        //return $imageid->imageId;
+        $statusData = DB::table('users')
+            ->join('statas_posts', 'users.id', '=', 'statas_posts.user_id')
+            ->select('statas_posts.*', 'users.name','users.proPic', 'users.email')
+            /*->where('id',$id)
+                ->first()*/
+            ->orderBy('id', 'desc')
+            ->paginate(10);
+           /* ->get();*/
+
+        /* echo '<pre>';
+         print_r($statusData);
+         exit();*/
+        //return $statusData;
+        return view('home', ['statusDataAlls' => $statusData,'imageid' => $imageid,'responseId' => $responseObj]);
+    }
+}
+
+
+10.	<?php
+
+namespace App\Http\Controllers;
+use App\imageId;
+use DB;
+use App\User;
+use Illuminate\Http\Request;
+
+class HomeIndexController extends Controller
+{
+    public function homeIndex(){
+        return view('frontEnd.home.HomeIndex');
+    }public function signInOut(){
+        return view('frontEnd.home.login');
+    }
+    public function search(Request $request ){
+        $term=$request->term;
+        $users=User::where('name','LIKE','%'.$term.'%')->orWhere('email','LIKE','%'.$term.'%')->get();
+        if(count($users)==0){
+            $searchItem[]='No item found';
+        }else{
+            foreach ($users as $key=>$value){
+                $searchItem[]=$value->name;
+            }
+        }
+        return $searchItem;
+    }
+    public function searchResult(Request $request){
+        $searchKey=$request->searchItem;
+        $users=User::where('name','LIKE','%'.$searchKey.'%')->orWhere('email','LIKE','%'.$searchKey.'%')->get();
+        //$users[]='No item found';
+       //return $users->all();
+        return view('frontEnd.home.searchList', ['usersall' => $users]);
+
+    }
+    public function PostById($id){
+        $responseObj = DB::table('responses')
+            ->join('users', 'responses.user_id', '=', 'users.id')
+            ->select('responses.*','users.name','users.proPic')
+            ->where('responses.post_id',$id)
+            ->orderBy('id', 'desc')
+            ->get();
+       // $imageid=imageId::where('id','2')->first();
+        $imageid=imageId::all();
+        //return $imageid->imageId;
+        $statusData = DB::table('users')
+            ->join('statas_posts', 'users.id', '=', 'statas_posts.user_id')
+            ->select('statas_posts.*', 'users.name','users.proPic', 'users.email')
+            ->where('statas_posts.id',$id)
+            ->first();
+
+        return view('frontEnd.home.PostById', ['statusDataAll' => $statusData,'imageid' => $imageid,'responseId' => $responseObj]);
+    }
+    public function allPostById($id){
+        $responseObj = DB::table('responses')
+            ->join('users', 'responses.user_id', '=', 'users.id')
+            ->select('responses.*','users.name','users.proPic')
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $imageid=imageId::all();
+        //return $imageid->imageId;
+        $statusData = DB::table('users')
+            ->join('statas_posts', 'users.id', '=', 'statas_posts.user_id')
+            ->select('statas_posts.*', 'users.name','users.proPic', 'users.email')
+            ->where('user_id',$id)
+            ->orderBy('id', 'desc')
+            ->paginate(10);
+        return view('frontEnd.home.allPostById', ['statusDataAlls' => $statusData,'imageid' => $imageid,'responseId' => $responseObj]);
+
+
+    }
+}
+
+
+
+
+11.	<?php
+
+namespace App\Http\Controllers;
+use Auth;
+use App\User;
+use Illuminate\Http\Request;
+use Socialite;
+class linkedinLoginController extends Controller
+{
+    public function redirectToProvider()
+    {
+        return Socialite::driver('linkedin')->redirect();
+    }
+
+    /**
+     * Obtain the user information from GitHub.
+     *
+     * @return Response
+     */
+
+    public function handleProviderCallback()
+    {
+        try{
+            $socialUser = Socialite::driver('linkedin')->user();
+            $user=User::where('linkedin_id',$socialUser->getId())->first();
+            $user2=User::where('email',$socialUser->getEmail())->first();
+            /* $a=(string)$socialUser->getEmail();*/
+            if($user2==null && $user==null){
+                $userObj = new User();
+                $userObj->linkedin_id=$socialUser->getId();
+                $userObj->name=$socialUser->getName();
+                $userObj->email=$socialUser->getEmail();
+                $userObj->gender='';
+                $userObj->phone='';
+                $userObj->statusVerify='1';;
+                $userObj->dateOfBirth='';
+                $userObj->password=bcrypt(123456);
+                $userObj->save();
+                Auth::login($userObj);
+                return redirect()->intended('/home');
+            }
+            /*elseif ($socialUser->getEmail().toString()==''){
+                $userObj = new User();
+                $userObj->facebook_id=$socialUser->getId();
+                $userObj->name=$socialUser->getName();
+                $userObj->email=$socialUser->getId().'@ownNote.com';
+                $userObj->gender='';
+                $userObj->phone='';
+                $userObj->dateOfBirth='';
+                $userObj->password=bcrypt(123456);
+                $userObj->save();
+                Auth::login($userObj);
+                return redirect()->intended('/home');
+            }*/
+            else{
+                Auth::login($user2);
+                return redirect()->intended('/home');
+            }
+
+        }
+        catch (\Exception $e){
+            // return dd($socialUser);
+            return redirect('/login');
+        }
+        //return dd($user);
+
+    }
+}
+
+
+
+12.	<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\EduUp;
+use App\BasicUp;
+use App\User;
+use DB;
+class ProfileController extends Controller
+{
+    public function index($id){
+        $userObject=User::where('id',$id)->first();
+        $BasicObject=BasicUp::where('id',$id)->first();
+        $EduObject=EduUp::where('id',$id)->first();
+       /* $eduBasicObject = EduUp::all();
+        $basicBasicObject = BasicUp::all();
+        $userBasicObject = User::all();*/
+        if( $BasicObject==null && $EduObject==null){
+            $basicObj=new BasicUp();
+            $basicObj->id = $id;
+            $basicObj->livingIn = '';
+            $basicObj->language = '';
+            $basicObj->birthdayPlace = '';
+            $basicObj->status = '';
+            $basicObj->religion = '';
+            $basicObj->bloodGroup = '';
+            $basicObj->socialNetwork ='';
+            $basicObj->address = '';
+            $basicObj->save();
+
+            $EduObj=new EduUp();
+            $EduObj->id = $id;
+            $EduObj->schools = '';
+            $EduObj->college = '';
+            $EduObj->highSchools = '';
+            $EduObj->university = '';
+            $EduObj->professionalSkills = '';
+            $EduObj->personalSkills = '';
+            $EduObj->technicalSkills ='';
+            $EduObj->achievement = '';
+            $EduObj->others = '';
+            $EduObj->save();
+            return view('frontEnd.update.profile',['eduinfo'=>$EduObj,'basicinfo'=>$basicObj,'userInfo'=>$userObject]);
+        }
+        elseif( $BasicObject==null && $EduObject!=null){
+            $basicObj=new BasicUp();
+            $basicObj->id = $id;
+            $basicObj->livingIn = '';
+            $basicObj->language = '';
+            $basicObj->birthdayPlace = '';
+            $basicObj->status = '';
+            $basicObj->religion = '';
+            $basicObj->bloodGroup = '';
+            $basicObj->socialNetwork ='';
+            $basicObj->address = '';
+            $basicObj->save();
+            return view('frontEnd.update.profile',['eduinfo'=>$EduObject,'basicinfo'=>$basicObj,'userInfo'=>$userObject]);
+        }
+        elseif( $BasicObject!=null && $EduObject==null){
+            $EduObj=new EduUp();
+            $EduObj->id = $id;
+            $EduObj->schools = '';
+            $EduObj->college = '';
+            $EduObj->highSchools = '';
+            $EduObj->university = '';
+            $EduObj->professionalSkills = '';
+            $EduObj->personalSkills = '';
+            $EduObj->technicalSkills ='';
+            $EduObj->achievement = '';
+            $EduObj->others = '';
+            $EduObj->save();
+            return view('frontEnd.update.profile',['eduinfo'=>$EduObj,'basicinfo'=>$BasicObject,'userInfo'=>$userObject]);
+        }
+        else
+            return view('frontEnd.update.profile',['eduinfo'=>$EduObject,'basicinfo'=>$BasicObject,'userInfo'=>$userObject]);
+
+
+}
+    public function proUp(Request $request){
+        if($request->hasFile('Prophoto')){
+            $userObj=User::find($request->userId);
+
+            $name = $request->Prophoto->getClientOriginalName();
+            $uploadPath = 'User/image/';
+            $request->Prophoto->move($uploadPath, $name);
+            $imageUrl = $uploadPath . $name;
+            $userObj->proPic= $imageUrl;
+            $userObj->save();
+            return redirect()->to('profile/'.$request->userId);
+        }else{
+            return redirect()->to('profile/'.$request->userId);
+        }
+
+    }
+    public function gallery($id){
+        $imageData = DB::table('users')
+            ->join('statas_posts', 'users.id', '=', 'statas_posts.user_id')
+            ->join('image_ids', 'image_ids.imageId', '=', 'statas_posts.imageId')
+            ->select('image_ids.upload_photo','statas_posts.post_time','statas_posts.status')
+            ->where('users.id',$id)
+            ->distinct()
+            ->get();
+        //return  $imageData;
+        return view('frontEnd.home.gallery',['imageDatas'=>$imageData]);
+
+    }
+}
+
+
+
+13.	<?php
+
+namespace App\Http\Controllers;
+
+use App\CategoryList;
+use App\imageId;
+use App\NotificationModel;
+use App\Response;
+use App\User;
+use Auth;
+use DB;
+use App\StatasPost;
+use Illuminate\Http\Request;
+
+class Status_postController extends Controller
+{
+
+
+    public function statusUp(Request $request)
+    {
+        $i=substr(md5(time()), 0, 11);
+
+       // return $request->all();
+
+        $this->validate($request, [
+            'upload_photo.*' => 'image|max:1024',
+            //'status'=>'required',
+        ]);
+
+
+        if($request->hasFile('upload_photo'))
+        {
+
+            foreach ($request->upload_photo as $file){
+                 $filename=$file->getClientOriginalName();
+                 print_r($filename.'<br>');
+                $name = $file->getClientOriginalName();
+                $uploadPath = 'User/image/';
+                $file->move($uploadPath, $name);
+                $imageUrl = $uploadPath . $name;
+                //$this->saveFunction($request, $imageUrl);
+
+                $imageIdObj=new imageId();
+                //$statusObj->imageId = $i;
+                $imageIdObj->upload_photo=$imageUrl;
+                $imageIdObj->imageId=$i;
+                $imageIdObj->save();
+            }
+            $statusObj = new StatasPost();
+            $statusObj->user_id = Auth::user()->id;
+            $statusObj->status = $request->status;
+            $statusObj->whoSee = $request->whoSee;
+            $statusObj->option = $request->option;
+            $statusObj->upload_photo = '';
+            $statusObj->anonymous = $request->anonymous;
+            $statusObj->post_time = date("Y-m-d (h:i:sa)");
+            $statusObj->imageId = $i;
+            $statusObj->save();
+
+            $categoryListAddByuser = new CategoryList();
+            $categoryListAddByuser->user_id = Auth::user()->id;
+            $categoryListAddByuser->Category_name = $request->option;
+            $categoryListAddByuser->save();
+
+
+            $notificationObj=new NotificationModel();
+            //$uObj=User::find( Auth::user()->id )->first();
+            $uObj= DB::table('users')
+                ->where('id', '=',Auth::user()->id)
+                ->select('users.*')
+                ->first();
+
+            $sPObj= DB::table('statas_posts')
+                ->where('user_id', '=',Auth::user()->id)
+                ->where('status', '=',$request->status)
+                ->where('post_time', '=',$statusObj->post_time)
+                ->select('statas_posts.*')
+                ->first();
+
+
+            $notificationObj->user_id=Auth::user()->id;
+            $notificationObj->user_name=$uObj->name;
+            $notificationObj->message=' update a status ';
+            $notificationObj->link_id=$sPObj->id;
+            $notificationObj->anonymous=$request->anonymous;
+            $notificationObj->time=$statusObj->post_time;
+            $notificationObj->save();
+
+            return redirect('/home');
+
+
+
+
+        }
+        else{
+
+            $imageUrl = '';
+            /*$this->saveFunction($request, $imageUrl);*/
+            $statusObj = new StatasPost();
+            $imageIdObj=new imageId();
+
+            $statusObj->user_id = Auth::user()->id;
+            $statusObj->status = $request->status;
+            $statusObj->whoSee = $request->whoSee;
+            $statusObj->option = $request->option;
+            $statusObj->upload_photo = $imageUrl;
+            $statusObj->anonymous = $request->anonymous;
+            $statusObj->post_time = date("Y-m-d (h:i:sa)");
+            //$statusObj->imageId = substr(md5(time()), 0, 11);
+            $statusObj->imageId =$i;
+            $imageIdObj->upload_photo=$statusObj->upload_photo;
+            $imageIdObj->imageId=$statusObj->imageId;
+            $statusObj->save();
+            $imageIdObj->save();
+
+            $categoryListAddByuser = new CategoryList();
+            $categoryListAddByuser->user_id = Auth::user()->id;
+            $categoryListAddByuser->Category_name = $request->option;
+            $categoryListAddByuser->save();
+            $notificationObj=new NotificationModel();
+            $uObj= DB::table('users')
+                ->where('id', '=',Auth::user()->id)
+                ->select('users.*')
+                ->first();
+
+            $sPObj= DB::table('statas_posts')
+                ->where('user_id', '=',Auth::user()->id)
+                ->where('status', '=',$request->status)
+                ->where('post_time', '=',$statusObj->post_time)
+                ->select('statas_posts.*')
+                ->first();
+
+
+            $notificationObj->user_id=Auth::user()->id;
+            $notificationObj->user_name=$uObj->name;
+            $notificationObj->message=' update a status ';
+            $notificationObj->link_id=$sPObj->id;
+            $notificationObj->anonymous=$request->anonymous;
+            $notificationObj->time=$statusObj->post_time;
+            $notificationObj->save();
+
+            return redirect('/home');
+
+         }
+
+        /*$image = $request->file('upload_photo');
+        if ($image == null) {
+            $imageUrl = '';
+        } else {
+            $name = $image->getClientOriginalName();
+            $uploadPath = 'User/image/';
+            $image->move($uploadPath, $name);
+            $imageUrl = $uploadPath . $name;
+        }*/
+
+
+
+
+
+    }
+
+    /*protected function saveFunction($request, $imageUrl)
+    {
+
+        $statusObj = new StatasPost();
+        $imageIdObj=new imageId();
+        $statusObj->user_id = Auth::user()->id;
+        $statusObj->status = $request->status;
+        $statusObj->whoSee = $request->whoSee;
+        $statusObj->option = $request->option;
+        $statusObj->upload_photo = $imageUrl;
+        $statusObj->anonymous = $request->anonymous;
+        $statusObj->post_time = date("Y-m-d (h:i:sa)");
+        //$statusObj->imageId = substr(md5(time()), 0, 11);
+        $statusObj->imageId = $i;
+        $imageIdObj->upload_photo=$statusObj->upload_photo;
+        $imageIdObj->imageId=$statusObj->imageId;
+        $statusObj->save();
+        $imageIdObj->save();
+
+    }*/
+
+    public function statusDelete($id)
+    {
+
+        $statusObj = StatasPost::find($id);
+        $statusById1 = StatasPost::where('id',$id)->first();
+        $ImageId = $statusById1->imageId;
+        $imageidObj = imageId::where('imageId',$ImageId)->get();
+        $theDefaults = array();
+        foreach($imageidObj as $v) {
+            $theDefaults[$v->id] = $v->upload_photo;
+        }
+        //return $theDefaults;
+       /* print_r($theDefaults);
+        exit();*/
+        //$oldImageUrl1 = $statusById1->upload_photo;
+        if($imageidObj !=null){
+            try{
+                foreach ($theDefaults as $imageid ){
+                    unlink($imageid);
+                }
+            }catch (\Exception $e){
+                $statusObj->delete();
+                imageId::where('imageId', $ImageId)->delete();
+                return redirect('/home');
+            }
+        }
+
+        /*if($oldImageUrl1 !=null){
+            try{
+                unlink($oldImageUrl1);
+            }catch (\Exception $e){
+                $statusObj->delete();
+                return redirect('/home');
+            }
+
+        }*/
+        imageId::where('imageId', $ImageId)->delete();
+        $statusObj->delete();
+        return redirect('/home');
+    }
+
+    public function statusEdit($id)
+    {
+
+        $statusObj = StatasPost::where('id', $id)->first();
+        $userId = $statusObj->user_id;
+        $imageId = $statusObj->    imageId;
+        $userObj = User::where('id', $userId)->first();
+        $imageObject = imageId::where('imageId', $imageId)->get();
+        /*echo '<pre>';
+        print_r($statusObj);
+        exit();*/
+        return view('frontEnd.home.statusEdit', ['StatusById' => $statusObj, 'StatusByUser' => $userObj, 'StatusByImage' => $imageObject,]);
+    }
+
+    public function statusUpdate(Request $request)
+    {
+        if($request->hasFile('upload_photo'))
+        {
+            $statusById = StatasPost::where('id', $request->Statusid)->first();
+            $i=substr(md5(time()), 0, 11);
+            $this->validate($request, [
+                'upload_photo.*' => 'image|max:1024',
+                //'status'=>'required',
+            ]);
+
+            $ImageId=$statusById->imageId;
+            $imageidObj = imageId::where('imageId',$ImageId)->get();
+            $theDefaults = array();
+            foreach($imageidObj as $v) {
+                $theDefaults[$v->id] = $v->upload_photo;
+            }
+            if($imageidObj !=null){
+                try{
+                    foreach ($theDefaults as $imageid ){
+                        unlink($imageid);
+                    }
+                    imageId::where('imageId', $ImageId)->delete();
+                }catch (\Exception $e){
+                    imageId::where('imageId', $ImageId)->delete();
+                }
+            }
+
+
+            foreach ($request->upload_photo as $file){
+                $name = $file->getClientOriginalName();
+                $uploadPath = 'User/image/';
+                $file->move($uploadPath, $name);
+                $imageUrl = $uploadPath . $name;
+                $imageIdObj=new imageId();
+                $imageIdObj->upload_photo=$imageUrl;
+                $imageIdObj->imageId=$i;
+                $imageIdObj->save();
+            }
+            $statusObj=StatasPost::find($request->Statusid);
+            $statusObj->user_id = $request->userId;
+            $statusObj->status = $request->status;
+            $statusObj->whoSee = $request->whoSee;
+            $statusObj->option = $request->option1;
+            $statusObj->imageId = $i;
+            $statusObj->anonymous = $request->anonymous;
+            $statusObj->post_time = date("Y-m-d (h:i:sa)");
+            $statusObj->save();
+
+
+
+
+            return redirect('/home');
+        }
+        else{
+            $statusObj=StatasPost::find($request->Statusid);
+            $statusObj->user_id = $request->userId;
+            $statusObj->status = $request->status;
+            $statusObj->whoSee = $request->whoSee;
+            $statusObj->option = $request->option1;
+            $statusObj->anonymous = $request->anonymous;
+            $statusObj->post_time = date("Y-m-d (h:i:sa)");
+            $statusObj->save();
+
+
+
+
+            return redirect('/home');
+        }
+
+       // $imageUrl = $this->imageExistStatus($request);
+
+
+    }
+
+    private function imageExistStatus($request)
+    {/*
+
+
+        if ($statusImage) {
+            $oldImageUrl = $statusById->upload_photo;
+            unlink($oldImageUrl);
+            $name = $statusImage->getClientOriginalName();
+            $uploadPath = 'User/image/';
+            $statusImage->move($uploadPath, $name);
+
+            $imageUrl = $uploadPath . $name;
+        } else {
+            $imageUrl = $statusById->upload_photo;
+        }
+        return $imageUrl;*/
+    }
+
+    public function responseCreate(Request $request){
+        $responseObj=new Response();
+        $responseObj->user_id=$request->user_id;
+        $responseObj->post_id=$request->post_id;
+        $responseObj->post_time=date("Y-m-d (h:i:sa)");
+        $responseObj->Response=$request->text;
+        $responseObj->anonymous=$request->responseAnonymous;
+        $responseObj->save();
+
+
+        $notificationObj=new NotificationModel();
+        //$statusPostObj=StatasPost::find($request->post_id)->first();
+        $statusPostObj= DB::table('statas_posts')
+            ->where('id', '=',$request->post_id)
+            ->select('statas_posts.*')
+            ->first();
+
+
+        $uObj= DB::table('users')
+            ->where('id', '=',$request->user_id)
+            ->select('users.*')
+            ->first();
+
+
+        $notificationObj->user_id=$request->user_id;
+        $notificationObj->user_name=$uObj->name;
+        $notificationObj->message=' update a response ';
+        $notificationObj->link_id=$request->post_id;
+        $notificationObj->anonymous=$request->responseAnonymous;
+        $notificationObj->time=$responseObj->post_time;
+
+        $notificationObj->form=$statusPostObj->user_id;
+        $notificationObj->save();
+
+
+        //return $request->all();
+        return 'Done';
+    }
+    public function responseUpdate(Request $request){
+
+        $responseObj=Response::find($request->id);
+        $responseObj->Response=$request->value;
+        $responseObj->post_time=date("Y-m-d (h:i:sa)");
+        $responseObj->anonymous=$request->responseAnonymous;
+        $responseObj->save();
+       // return 'Done';
+    }
+
+    public function responseDelete(Request $request){
+        Response::where('id',$request->id)->delete();
+    }
+}
+
+
+
+14.	<?php
+
+namespace App\Http\Controllers;
+use Auth;
+use App\User;
+use Illuminate\Http\Request;
+use Socialite;
+class TwitterLoginController extends Controller
+{
+    public function redirectToProvider()
+    {
+        return Socialite::driver('twitter')->redirect();
+    }
+
+    /**
+     * Obtain the user information from GitHub.
+     *
+     * @return Response
+     */
+
+    public function handleProviderCallback()
+    {
+        try{
+            $socialUser = Socialite::driver('twitter')->user();
+            $user=User::where('twitter_id',$socialUser->getId())->first();
+            $user2=User::where('email',$socialUser->getEmail())->first();
+            /* $a=(string)$socialUser->getEmail();*/
+            if($user2==null && $user==null){
+                $userObj = new User();
+                $userObj->twitter_id=$socialUser->getId();
+                $userObj->name=$socialUser->getName();
+                $userObj->email=$socialUser->getEmail();
+                $userObj->gender='';
+                $userObj->phone='';
+                $userObj->statusVerify='1';;
+                $userObj->dateOfBirth='';
+                $userObj->password=bcrypt(123456);
+                $userObj->save();
+                Auth::login($userObj);
+                return redirect()->intended('/home');
+            }
+            /*elseif ($socialUser->getEmail().toString()==''){
+                $userObj = new User();
+                $userObj->facebook_id=$socialUser->getId();
+                $userObj->name=$socialUser->getName();
+                $userObj->email=$socialUser->getId().'@ownNote.com';
+                $userObj->gender='';
+                $userObj->phone='';
+                $userObj->dateOfBirth='';
+                $userObj->password=bcrypt(123456);
+                $userObj->save();
+                Auth::login($userObj);
+                return redirect()->intended('/home');
+            }*/
+            else{
+                Auth::login($user2);
+                return redirect()->intended('/home');
+            }
+
+        }
+        catch (\Exception $e){
+            // return dd($socialUser);
+            return redirect('/login');
+        }
+        //return dd($user);
+
+    }
+}
+
+
+15.	<?php
+
+namespace App\Http\Controllers;
+use App\CategoryList;
+use App\NotificationModel;
+use App\Response;
+use App\StatasPost;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
+use App\BasicUp;
+use App\User;
+use App\EduUp;
+use App\Notifications;
+use DB;
+class UpdateController extends Controller
+{
+    public function upLogin($id){
+       // return $email;
+        $userObject=User::where('id',$id)->first();
+        //$userObject=User::where('id',$id)->get();
+//        return $userObject;
+       return view('frontEnd.update.loginUpdate',['userInfoById'=>$userObject]);
+    }
+    public function upBasic($id){
+        $BasicObject=BasicUp::where('id',$id)->first();
+        if( $BasicObject==null){
+            $basicObj=new BasicUp();
+            $basicObj->id = $id;
+            $basicObj->livingIn = '';
+            $basicObj->language = '';
+            $basicObj->birthdayPlace = '';
+            $basicObj->status = '';
+            $basicObj->religion = '';
+            $basicObj->bloodGroup = '';
+            $basicObj->socialNetwork ='';
+            $basicObj->address = '';
+            $basicObj->save();
+            return view('frontEnd.update.basicUpdate',['BasicObject'=>$basicObj]);
+        }
+        return view('frontEnd.update.basicUpdate',['BasicObject'=>$BasicObject]);
+    }
+    public function upEducation($id){
+        $EduObject=EduUp::where('id',$id)->first();
+        if( $EduObject==null){
+            $EduObj=new EduUp();
+            $EduObj->id = $id;
+            $EduObj->schools = '';
+            $EduObj->college = '';
+            $EduObj->highSchools = '';
+            $EduObj->university = '';
+            $EduObj->professionalSkills = '';
+            $EduObj->personalSkills = '';
+            $EduObj->technicalSkills ='';
+            $EduObj->achievement = '';
+            $EduObj->others = '';
+            $EduObj->save();
+            return view('frontEnd.update.eduUpdate',['userInfoById'=>$EduObj]);
+        }
+    return view('frontEnd.update.eduUpdate',['userInfoById'=>$EduObject]);
+    }
+    public function upBasicSave(Request $request){
+       // return $request->all();
+    //return view('frontEnd.update.eduUpdate');
+      //  $basicUpObject=new BasicUp();
+        $basicUpObject=BasicUp::find($request->id);
+    $basicUpObject->livingIn = $request->livingIn;
+    $basicUpObject->language = $request->language;
+    $basicUpObject->birthdayPlace = $request->birthdayPlace;
+    $basicUpObject->status = $request->status;
+    $basicUpObject->religion = $request->religion;
+    $basicUpObject->bloodGroup = $request->bloodGroup;
+    $basicUpObject->socialNetwork = $request->socialNetwork;
+    $basicUpObject->address = $request->address;
+    $basicUpObject->save();
+
+        $notificationObj=new NotificationModel();
+        //$uObj=User::find(Auth::user()->id)->first();
+        $uObj= DB::table('users')
+            ->where('id', '=',Auth::user()->id)
+            ->select('users.*')
+            ->first();
+
+        $notificationObj->user_id=Auth::user()->id;
+        $notificationObj->user_name=$uObj->name;
+        $notificationObj->message=' update profile ';
+        $notificationObj->link_id=Auth::user()->id;
+        $notificationObj->save();
+
+        //return'Basic info Update successfully';
+/*    return redirect('/update/basic')->with('message','Basic info Update successfully');*/
+    return redirect('update/basic/'.$request->id)->with('message','Basic info Update successfully');
+    }
+    public function upEduSave(Request $request){
+       // return $request->all();
+    //return view('frontEnd.update.eduUpdate');
+    //return'Basic info Update successfully';
+        /*DB::table('edu_ups')->insert([
+            'schools'=>$request->schools,
+            'college'=>$request->college,
+            'highSchools'=>$request->highSchools,
+            'university'=>$request->university,
+            'professionalSkills'=>$request->professionalSkills,
+            'personalSkills'=>$request->personalSkills,
+            'technicalSkills'=>$request->technicalSkills,
+            'achievement'=>$request->achievement,
+            'others'=>$request->others,
+        ]);*/
+        $EduBasicUp=EduUp::find($request->id);
+        $EduBasicUp->schools = $request->schools;
+        $EduBasicUp->college = $request->college;
+        $EduBasicUp->highSchools = $request->highSchools;
+        $EduBasicUp->university = $request->university;
+        $EduBasicUp->professionalSkills = $request->professionalSkills;
+        $EduBasicUp->personalSkills = $request->personalSkills;
+        $EduBasicUp->technicalSkills = $request->technicalSkills;
+        $EduBasicUp->achievement = $request->achievement;
+        $EduBasicUp->others = $request->others;
+        $EduBasicUp->save();
+        $notificationObj=new NotificationModel();
+       // $uObj=User::find(Auth::user()->id)->first();
+        $uObj= DB::table('users')
+            ->where('id', '=',Auth::user()->id)
+            ->select('users.*')
+            ->first();
+
+        $notificationObj->user_id=Auth::user()->id;
+        $notificationObj->user_name=$uObj->name;
+        $notificationObj->message=' update profile ';
+        $notificationObj->link_id=Auth::user()->id;
+        $notificationObj->save();
+/*    return redirect('/update/education')->with('message','Education info Update successfully');*/
+        return redirect('/update/education/'.$request->id)->with('message','Education info Update successfully');
+    }
+    public function upLoginSave(Request $request){
+       // return $request->all();
+    //return view('frontEnd.update.eduUpdate');
+    //return'Basic info Update successfully';
+       /* dd($request->all());*/
+        $userObject2=User::find($request->id);
+        $userObject2->name = $request->name;
+        $userObject2->email = $request->email;
+        $userObject2->gender = $request->gender;
+        $userObject2->phone = $request->phone;
+        $userObject2->dateOfBirth = $request->date;
+        $userObject2->password = bcrypt($request->password);
+        $userObject2->save();
+
+        $notificationObj=new NotificationModel();
+        //$uObj=User::find(Auth::user()->id)->first();
+        $uObj= DB::table('users')
+            ->where('id', '=',Auth::user()->id)
+            ->select('users.*')
+            ->first();
+
+        $notificationObj->user_id=Auth::user()->id;
+        $notificationObj->user_name=$uObj->name;
+        $notificationObj->message=' update profile ';
+        $notificationObj->link_id=Auth::user()->id;
+        $notificationObj->save();
+    return redirect('/update/login/'.$request->id)->with('message','Info Update successfully');;
+    }
+
+    public function deleteUser(Request $request){
+
+        //$imageid=StatasPost::where('user_id',$request->id)->first();
+        //imageId::where('imageId',$imageid->imageId)->delete();
+        BasicUp::where('id',$request->id)->delete();
+        CategoryList::where('user_id',$request->id)->delete();
+        EduUp::where('id',$request->id)->delete();
+        Response::where('user_id',$request->id)->delete();
+        StatasPost::where('user_id',$request->id)->delete();
+        User::where('id',$request->id)->delete();
+    }
+}
+
+
+
+
+
+
+
+
+
+16.	<?php
+
+namespace App\Http\Controllers;
+
+use App\OthersComment;
+use Illuminate\Http\Request;
+
+class WelcomeController extends Controller
+{
+    public function welcome(){
+        return view('frontEnd.home.welcome');
+    }
+    public function OutCustomar(Request $request){
+
+        $othersObj=new OthersComment();
+        $othersObj->name=$request->name;
+        $othersObj->email=$request->email;
+        $othersObj->comment=$request->comment;
+        $othersObj->save();
+    }
+}
+
+
+
+17.	<?php
+
+namespace App\Providers;
+
+use Illuminate\Support\Facades\Schema;
+use View;
+use Auth;
+use DB;
+use App\StatasPost;
+use App\CategoryList;
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Bootstrap any application services.
+     *
+     * @return void
+     */
+    public function boot()
+    {
+        //Schema::defaultStringLength(191);
+        View::share('shadhin', 'shadhin');
+
+
+        View::composer('*', function ($view) {
+            /*$categoryObj=CategoryList::where('user_id',Auth::user()->id)->get();*/
+
+            try {
+                $notificationObj = DB::table('notification_models')
+                    ->select('notification_models.*')
+                    ->orderBy('id', 'desc')
+                    ->get();
+
+                $id = Auth::user()->id;
+                $categoryObj = DB::table('category_lists')
+
+                    /*->select('category_lists.*')*/
+                    /*->where('id',$id)
+                        ->first()*/
+
+                    /*->orderBy('id', 'desc')*/
+                    ->distinct()
+                    ->where('user_id', $id)
+                    ->get(['Category_name']);
+                $view->with('CategoryListById', $categoryObj);
+                $view->with('notificationObj', $notificationObj);
+            } catch (\Exception $e) {
+
+                return redirect('/home');
+            }
+
+        });
+
+    }
+
+    /**
+     * Register any application services.
+     *
+     * @return void
+     */
+    public function register()
+    {
+        //
+    }
+}
+
+
+18.	App.js
+/**
+ * First we will load all of this project's JavaScript dependencies which
+ * includes Vue and other libraries. It is a great starting point when
+ * building robust, powerful web applications using Vue and Laravel.
+ */
+
+require('./bootstrap');
+
+window.Vue = require('vue');
+import Vue from 'vue'
+import VueChatScroll from 'vue-chat-scroll'
+Vue.use(VueChatScroll)
+
+import Toaster from 'v-toaster'
+import 'v-toaster/dist/v-toaster.css'
+Vue.use(Toaster, {timeout: 5000})
+/**
+ * Next, we will create a fresh Vue application instance and attach it to
+ * the page. Then, you may begin adding components to this application
+ * or customize the JavaScript scaffolding to fit your unique needs.
+ */
+
+Vue.component('message', require('./components/message.vue'));
+
+const app = new Vue({
+    el: '#app',
+    data:{
+        message:'',
+        chat:{
+            message:[],
+            user:[],
+            color:[],
+            time:[],
+        },
+        typing:'',
+        nuberOfUsers: 0,
+
+    },
+    watch:{
+        message(){
+            Echo.private('chat')
+                .whisper('typing', {
+                    name: this.message
+                });
+        }
+    },
+    methods:{
+        send(){
+            if(this.message.length!=0){
+                this.chat.message.push(this.message);
+                this.chat.color.push('success');
+                this.chat.user.push('you');
+                this.chat.time.push(this.getTime());
+
+                axios.post('chat/send', {
+                    message:this.message,
+                    chat:this.chat,
+
+                })
+                    .then(response => {
+                        console.log(response);
+                        this.message=''
+                    })
+                    .catch(error => {
+                        console.log(error);
+                    });
+
+
+            }
+
+        },
+        getTime(){
+    let time =new Date();
+    return time.getHours()+':'+time.getMinutes();
+        },
+        getOldMessages(){
+            axios.post('/getOldMessage')
+                .then(response =>{
+                    console.log(response);
+                    if(response.data !=''){
+                        this.chat=response.data;
+                    }
+
+                })
+                .catch(error=>{
+                   console.log(error);
+                });
+
+        },
+    },
+
+    mounted(){
+        this.getOldMessages();
+        Echo.private('chat')
+            .listen('ChatEvent', (e) => {
+                this.chat.message.push(e.message);
+                this.chat.user.push(e.user);
+                this.chat.color.push('warning');
+                this.chat.time.push(this.getTime());
+
+                axios.post('/saveToSession',{
+                    chat : this.chat
+                })
+                    .then(response =>{
+
+                    })
+                    .catch(error=>{
+                        console.log(error);
+                    });
+
+              // console.log(e);
+
+            })
+            .listenForWhisper('typing', (e) => {
+                if(e.name !=''){
+                    this.typing ='typing...'
+                }
+                else {
+                    this.typing =''
+                }
+
+            })
+        Echo.join(`chat`)
+            .here((users) => {
+            this.nuberOfUsers=users.length;
+                console.log(users);
+            })
+            .joining((user) => {
+                this.nuberOfUsers += 1;
+                this.$toaster.success(user.name+' is joined ')
+                console.log(user.name);
+            })
+            .leaving((user) => {
+
+                this.nuberOfUsers -= 1;
+                this.$toaster.warning(user.name+' is leaved ')
+
+                console.log(user.name);
+            });
+    }
+
+});
+
+
+
+19.	Message.vue
+
+<template>
+    <div><li style="list-style-type: none;  border-radius: 5px;margin: 5px ;padding: 12px;text-align: left;width: 320px;height: 40px" :class="className">  <slot></slot>  </li>
+        <small style=" border-radius: 2px;padding: 5px;" :class="badgeClass" class=" float-right">{{ user }}</small>
+        <small style=" border-radius: 2px;padding: 5px;" :class="badgeClass" class=" float-right">{{ time }}</small>
+    </div>
+
+</template>
+
+<script>
+    export default {
+        props:[
+            'color',
+            'user',
+            'time'
+        ],
+        computed:{
+            className(){
+                return 'list-group-item-'+this.color;
+            },
+            badgeClass(){
+                return 'label label-'+this.color;
+            }
+        },
+        mounted() {
+            console.log('Component mounted.')
+        }
+    }
+</script>

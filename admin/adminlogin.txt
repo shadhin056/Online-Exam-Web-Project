@@ -1,0 +1,3 @@
+localhost/php-quiz/admin/index.php
+user:pgdca
+pass:pgdca

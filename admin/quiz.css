@@ -1,0 +1,90 @@
+#main
+{
+margin:auto;width:90%;
+height:auto;
+border:1px solid red;
+border-top:0px solid white;
+
+}
+body {
+	margin-left: 0px;
+	margin-top: 0px;
+}
+.style1 {
+	color: #FFFFFF;
+	font-weight: bold;
+}
+.style2 {
+	color: #990000;
+	font-weight: bold;
+}
+.style4 {
+	color: #000000;
+	font-weight: bold;
+}
+.style5 {color: #990033}
+.style6 {color: #ECE9D8}
+.style7 {
+	color: #993300;
+	font-weight: bold;
+}
+.style8 {
+	color: #6633CC;
+	font-weight: bold;
+}
+a:link {
+	color: #330066;
+	text-decoration: none;
+}
+a:hover {
+	color: #FFCC00;
+	text-decoration: underline;
+}
+a:visited {
+	color: #330066;
+	text-decoration: none;
+}
+.head1 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 24px;
+	color: #FF0000;
+	text-align: center;
+	font-weight: bold;
+}
+.errors {
+
+	color: #FF0000;
+	font-weight: bold;
+}
+.tot {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 16px;
+	color: #000000;
+}
+.tot {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 18px;
+	font-weight: bold;
+	color: #000000;
+	
+}
+.tans {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 18px;
+	font-weight: bold;
+	color:#00CC66 ;
+}
+.fans {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 18px;
+	font-weight: bold;
+	color:#FF0000 ;
+}
+input,select,textarea{width:400px;height:35px}
+textarea{height:100px}
+input:hover{border:1px solid red}
+textarea:hover{border:1px solid red}
+select:hover{border:1px solid red}
+input[type=submit]:hover{border:1px solid gray}
+input[type=reset]:hover{border:1px solid gray}
+input[type=submit],input[type=reset]{width:200px}
